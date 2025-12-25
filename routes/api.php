@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
 $apiName = env('API_NAME', 'api');
@@ -17,5 +18,14 @@ Route::prefix("{$apiName}/{$apiVersion}")->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('/logout-all', [AuthController::class, 'logoutAll']);
+
+        Route::get('/me', [UserController::class, 'me']);
+        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::post('/logout-all', [AuthController::class, 'logoutAll']);
+
+        // Admin only routes - User Management
+        Route::middleware('role:admin')->group(function () {
+            Route::apiResource('users', UserController::class);
+        });
     });
 });

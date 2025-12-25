@@ -12,7 +12,14 @@ Route::get('/login', function () {
     return view('auth.login');
 })->name('login');
 
-// Dashboard route
+// Dashboard route (accessible to all authenticated users)
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->name('dashboard');
+
+// Admin only routes
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::get('/users', function () {
+        return view('admin.users');
+    })->name('users');
+});

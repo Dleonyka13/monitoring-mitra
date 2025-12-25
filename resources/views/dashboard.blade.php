@@ -12,6 +12,13 @@
                     </div>
                     <div class="flex items-center space-x-4">
                         <span id="userInfo" class="text-gray-700"></span>
+                        <!-- Admin Menu -->
+                        <div id="adminMenu" class="hidden">
+                            <a href="/admin/users"
+                                class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition duration-200">
+                                Manage Users
+                            </a>
+                        </div>
                         <button onclick="logout()"
                             class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200">
                             Logout
@@ -67,6 +74,11 @@
             function displayUserInfo() {
                 const user = checkAuth();
                 if (!user) return;
+
+                // Show admin menu if user is admin
+                if (user.role === 'admin') {
+                    document.getElementById('adminMenu').classList.remove('hidden');
+                }
 
                 // Update header
                 document.getElementById('userInfo').textContent = `${user.name} (${user.role})`;
