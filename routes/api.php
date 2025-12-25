@@ -25,6 +25,9 @@ Route::prefix("{$apiName}/{$apiVersion}")->group(function () {
 
         // Admin only routes - User Management
         Route::middleware('role:admin')->group(function () {
+            Route::get('users/template/download', [UserController::class, 'downloadTemplate']);
+            Route::post('users/import', [UserController::class, 'import']);
+            Route::get('users/export', [UserController::class, 'export']);
             Route::apiResource('users', UserController::class);
         });
     });

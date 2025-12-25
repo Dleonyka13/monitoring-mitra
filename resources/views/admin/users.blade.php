@@ -31,7 +31,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <!-- Filter & Search -->
             <div class="bg-white rounded-lg shadow p-6 mb-6">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
                         <input type="text" id="searchInput" placeholder="Search by name or email..."
@@ -52,6 +52,41 @@
                         <button onclick="openAddUserModal()"
                             class="w-full bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition duration-200">
                             + Add New User
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Import/Export Actions -->
+                <div class="border-t pt-4 mt-4">
+                    <div class="flex flex-wrap gap-3">
+                        <button onclick="downloadTemplate()"
+                            class="flex items-center px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-200">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                </path>
+                            </svg>
+                            Download Template
+                        </button>
+
+                        <button onclick="openImportModal()"
+                            class="flex items-center px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition duration-200">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
+                                </path>
+                            </svg>
+                            Import Users
+                        </button>
+
+                        <button onclick="exportUsers()"
+                            class="flex items-center px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 transition duration-200">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z">
+                                </path>
+                            </svg>
+                            Export Users
                         </button>
                     </div>
                 </div>
@@ -162,6 +197,88 @@
         </div>
     </div>
 
+    <!-- Import Modal -->
+    <div id="importModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-900">Import Users from Excel</h3>
+                <button onclick="closeImportModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+
+            <form id="importForm" onsubmit="importUsers(event)">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Select Excel File *</label>
+                    <input type="file" id="importFile" accept=".xlsx,.xls" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    <p class="text-xs text-gray-500 mt-2">
+                        Accepted formats: .xlsx, .xls | Max size: 2MB
+                    </p>
+                </div>
+
+                <!-- Instructions -->
+                <div class="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
+                    <h4 class="font-semibold text-blue-800 mb-2">Import Instructions:</h4>
+                    <ul class="text-sm text-blue-700 space-y-1 list-disc list-inside">
+                        <li>Download the template first if you haven't</li>
+                        <li>Fill in user data according to the template format</li>
+                        <li>Required columns: Name, Email, Password, Role</li>
+                        <li>Role options: mitra, pegawai, kepala, admin</li>
+                        <li>Email must be unique</li>
+                        <li>Password minimum 8 characters</li>
+                    </ul>
+                </div>
+
+                <!-- Progress Bar -->
+                <div id="importProgress" class="hidden mb-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-gray-700">Importing...</span>
+                        <span id="importProgressText" class="text-sm text-gray-500">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="importProgressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                            style="width: 0%">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Import Results -->
+                <div id="importResults" class="hidden mb-4">
+                    <div class="bg-gray-50 border rounded-md p-4">
+                        <h4 class="font-semibold text-gray-800 mb-2">Import Results:</h4>
+                        <div class="flex gap-4 mb-3">
+                            <div class="flex-1 bg-green-100 rounded p-3 text-center">
+                                <div class="text-2xl font-bold text-green-700" id="successCount">0</div>
+                                <div class="text-xs text-green-600">Success</div>
+                            </div>
+                            <div class="flex-1 bg-red-100 rounded p-3 text-center">
+                                <div class="text-2xl font-bold text-red-700" id="failedCount">0</div>
+                                <div class="text-xs text-red-600">Failed</div>
+                            </div>
+                        </div>
+                        <div id="importErrors" class="max-h-60 overflow-y-auto"></div>
+                    </div>
+                </div>
+
+                <div class="flex space-x-3">
+                    <button type="button" onclick="closeImportModal()"
+                        class="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition duration-200">
+                        Cancel
+                    </button>
+                    <button type="submit" id="importButton"
+                        class="flex-1 bg-purple-500 text-white px-4 py-2 rounded-md hover:bg-purple-600 transition duration-200">
+                        Import
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     @push('scripts')
         <script>
             const API_BASE = '/api/monitoring-mitra/v1';
@@ -253,9 +370,9 @@
                         <button onclick="editUser('${user.id}')" 
                             class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
                         ${user.id !== currentUser.id ? `
-                                            <button onclick="deleteUser('${user.id}')" 
-                                                class="text-red-600 hover:text-red-900">Delete</button>
-                                        ` : ''}
+                                    <button onclick="deleteUser('${user.id}')" 
+                                        class="text-red-600 hover:text-red-900">Delete</button>
+                                ` : ''}
                     </td>
                 </tr>
             `).join('');
@@ -388,17 +505,191 @@
                 }
             }
 
-            // Helper functions
-            function getRoleLabel(role) {
-                const roles = {
-                    'mitra': 'Mitra',
-                    'pegawai': 'Pegawai',
-                    'kepala': 'Kepala',
-                    'admin': 'Admin'
-                };
-                return roles[role] || role;
+            // ========== IMPORT/EXPORT FUNCTIONS ==========
+
+            // Download Excel template
+            async function downloadTemplate() {
+                try {
+                    const token = localStorage.getItem('token');
+                    const response = await fetch(`${API_BASE}/users/template/download`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (!response.ok) throw new Error('Failed to download template');
+
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `user_import_template_${new Date().getTime()}.xlsx`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+
+                    alert('Template downloaded successfully!');
+                } catch (error) {
+                    console.error('Download error:', error);
+                    alert('Failed to download template');
+                }
             }
 
+            // Open import modal
+            function openImportModal() {
+                document.getElementById('importForm').reset();
+                document.getElementById('importProgress').classList.add('hidden');
+                document.getElementById('importResults').classList.add('hidden');
+                document.getElementById('importButton').disabled = false;
+                document.getElementById('importModal').classList.remove('hidden');
+            }
+
+            // Close import modal
+            function closeImportModal() {
+                document.getElementById('importModal').classList.add('hidden');
+                document.getElementById('importForm').reset();
+            }
+
+            // Import users from Excel
+            async function importUsers(event) {
+                event.preventDefault();
+
+                const fileInput = document.getElementById('importFile');
+                const file = fileInput.files[0];
+
+                if (!file) {
+                    alert('Please select a file');
+                    return;
+                }
+
+                // Check file size (2MB)
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('File size exceeds 2MB limit');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                // Show progress
+                document.getElementById('importProgress').classList.remove('hidden');
+                document.getElementById('importResults').classList.add('hidden');
+                document.getElementById('importButton').disabled = true;
+
+                // Simulate progress
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += 10;
+                    if (progress <= 90) {
+                        document.getElementById('importProgressBar').style.width = progress + '%';
+                        document.getElementById('importProgressText').textContent = progress + '%';
+                    }
+                }, 200);
+
+                try {
+                    const token = localStorage.getItem('token');
+                    const response = await fetch(`${API_BASE}/users/import`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: formData
+                    });
+
+                    clearInterval(progressInterval);
+                    document.getElementById('importProgressBar').style.width = '100%';
+                    document.getElementById('importProgressText').textContent = '100%';
+
+                    const result = await response.json();
+
+                    if (result.status === 'success') {
+                        // Show results
+                        document.getElementById('successCount').textContent = result.data.success_count;
+                        document.getElementById('failedCount').textContent = result.data.failed_count;
+
+                        // Show errors if any
+                        const errorsDiv = document.getElementById('importErrors');
+                        if (result.data.errors && result.data.errors.length > 0) {
+                            errorsDiv.innerHTML = `
+                            <div class="mt-3">
+                                <h5 class="font-semibold text-red-700 text-sm mb-2">Errors:</h5>
+                                <div class="space-y-2 text-xs">
+                                    ${result.data.errors.map(error => `
+                                                <div class="bg-red-50 border border-red-200 rounded p-2">
+                                                    <div class="font-semibold text-red-800">Row ${error.row}: ${error.email}</div>
+                                                    <ul class="list-disc list-inside text-red-600 ml-2">
+                                                        ${error.errors.map(err => `<li>${err}</li>`).join('')}
+                                                    </ul>
+                                                </div>
+                                            `).join('')}
+                                </div>
+                            </div>
+                        `;
+                        } else {
+                            errorsDiv.innerHTML =
+                                '<p class="text-sm text-green-600 mt-2">All users imported successfully!</p>';
+                        }
+
+                        document.getElementById('importProgress').classList.add('hidden');
+                        document.getElementById('importResults').classList.remove('hidden');
+
+                        // Reload users table
+                        setTimeout(() => {
+                            loadUsers(1);
+                        }, 1000);
+                    } else {
+                        throw new Error(result.message || 'Import failed');
+                    }
+                } catch (error) {
+                    clearInterval(progressInterval);
+                    console. // Continuation from the truncated part in import function
+                    error('Import error:', error);
+                    document.getElementById('importProgress').classList.add('hidden');
+                    alert(error.message || 'Failed to import users');
+                    document.getElementById('importButton').disabled = false;
+                }
+            }
+
+            // Export users to Excel
+            async function exportUsers() {
+                try {
+                    const search = document.getElementById('searchInput').value;
+                    const role = document.getElementById('roleFilter').value;
+
+                    const params = new URLSearchParams();
+                    if (search) params.append('search', search);
+                    if (role) params.append('role', role);
+
+                    const token = localStorage.getItem('token');
+                    const response = await fetch(`${API_BASE}/users/export?${params}`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (!response.ok) throw new Error('Failed to export users');
+
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `users_export_${new Date().getTime()}.xlsx`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+
+                    alert('Users exported successfully!');
+                } catch (error) {
+                    console.error('Export error:', error);
+                    alert('Failed to export users');
+                }
+            }
+
+            // Helper functions
             function getRoleBadgeClass(role) {
                 const classes = {
                     'admin': 'bg-red-100 text-red-800',
@@ -409,24 +700,29 @@
                 return classes[role] || 'bg-gray-100 text-gray-800';
             }
 
+            function getRoleLabel(role) {
+                const labels = {
+                    'admin': 'Admin',
+                    'kepala': 'Kepala',
+                    'pegawai': 'Pegawai',
+                    'mitra': 'Mitra'
+                };
+                return labels[role] || role;
+            }
+
             function formatDate(dateString) {
                 const date = new Date(dateString);
                 return date.toLocaleDateString('id-ID', {
                     year: 'numeric',
                     month: 'short',
-                    day: 'numeric'
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
                 });
             }
 
-            // Logout function
-            async function logout() {
-                if (!confirm('Are you sure you want to logout?')) return;
-
-                try {
-                    await window.axios.post(`${API_BASE}/logout`);
-                } catch (error) {
-                    console.error('Logout error:', error);
-                } finally {
+            function logout() {
+                if (confirm('Are you sure you want to logout?')) {
                     localStorage.removeItem('token');
                     localStorage.removeItem('user');
                     window.location.href = '/login';
@@ -436,19 +732,23 @@
             // Event listeners
             document.getElementById('searchInput').addEventListener('input', function() {
                 clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => loadUsers(1), 500);
+                searchTimeout = setTimeout(() => {
+                    loadUsers(1);
+                }, 500);
             });
 
             document.getElementById('roleFilter').addEventListener('change', function() {
                 loadUsers(1);
             });
 
-            // Initialize
-            const user = checkAuth();
-            if (user) {
-                document.getElementById('userInfo').textContent = `${user.name} (${user.role})`;
-                loadUsers();
-            }
+            // Initialize on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                const user = checkAuth();
+                if (user) {
+                    document.getElementById('userInfo').textContent = `Welcome, ${user.name}`;
+                    loadUsers(1);
+                }
+            });
         </script>
     @endpush
 </x-layout>
