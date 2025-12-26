@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\Facades\Blade;
+use App\Services\ExcelService;
+use App\Services\StatisticalActivityExcelService;
+use App\Services\StatisticalActivityService;
+use App\Services\UserService;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -12,7 +15,23 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Register User Services
+        $this->app->singleton(UserService::class, function ($app) {
+            return new UserService();
+        });
+
+        $this->app->singleton(ExcelService::class, function ($app) {
+            return new ExcelService();
+        });
+
+        // Register Statistical Activity Services
+        $this->app->singleton(StatisticalActivityService::class, function ($app) {
+            return new StatisticalActivityService();
+        });
+
+        $this->app->singleton(StatisticalActivityExcelService::class, function ($app) {
+            return new StatisticalActivityExcelService();
+        });
     }
 
     /**
@@ -20,7 +39,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Register the layout component
-        Blade::component('layout', \App\View\Components\Layout::class);
+        //
     }
 }

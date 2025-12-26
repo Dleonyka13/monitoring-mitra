@@ -62,4 +62,14 @@ class User extends Authenticatable
     {
         return in_array($this->role, $roles);
     }
+
+    public function pmlAllocations()
+    {
+        return $this->hasMany(PmlAllocation::class);
+    }
+
+    public function pclAllocations()
+    {
+        return $this->hasMany(PclAllocation::class);
+    }
 }

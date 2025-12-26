@@ -14,7 +14,8 @@ return new class extends Migration
             $table->dateTime('start_date');
             $table->dateTime('end_date');
             $table->integer('total_target');
-            $table->boolean('is_done')->default(false); // status selesai / belum
+            $table->boolean('is_done')->default(false);
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }
