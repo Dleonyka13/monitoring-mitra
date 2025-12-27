@@ -3,9 +3,11 @@
 namespace App\Providers;
 
 use App\Services\ExcelService;
-use App\Services\StatisticalActivityExcelService;
 use App\Services\StatisticalActivityService;
+use App\Services\StatisticalActivityExcelService;
 use App\Services\UserService;
+use App\Services\PmlAllocationService;
+use App\Services\PmlAllocationExcelService;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -15,31 +17,24 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Register User Services
-        $this->app->singleton(UserService::class, function ($app) {
-            return new UserService();
-        });
+        /**
+         * By passing only the class name to the singleton method, 
+         * Laravel uses reflection to see what the constructor needs.
+         * This fixes the "Too few arguments" error because Laravel 
+         * will now automatically inject the missing dependencies.
+         */
 
-        $this->app->singleton(ExcelService::class, function ($app) {
-            return new ExcelService();
-        });
+        // User Services
+        $this->app->singleton(UserService::class);
+        $this->app->singleton(ExcelService::class);
 
-        // Register Statistical Activity Services
-        $this->app->singleton(StatisticalActivityService::class, function ($app) {
-            return new StatisticalActivityService();
-        });
+        // Statistical Activity Services
+        $this->app->singleton(StatisticalActivityService::class);
+        $this->app->singleton(StatisticalActivityExcelService::class);
 
-        $this->app->singleton(StatisticalActivityExcelService::class, function ($app) {
-            return new StatisticalActivityExcelService();
-        });
-
-        $this->app->singleton(PmlAllocationService::class, function ($app) {
-            return new PmlAllocationService();
-        });
-
-        $this->app->singleton(PmlAllocationExcelService::class, function ($app) {
-            return new PmlAllocationExcelService();
-        });
+        // PML Allocation Services
+        $this->app->singleton(PmlAllocationService::class);
+        $this->app->singleton(PmlAllocationExcelService::class);
     }
 
     /**

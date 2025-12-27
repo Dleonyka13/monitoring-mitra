@@ -285,7 +285,7 @@ class UserController extends Controller
         $filter = UserFilterDto::fromRequest($request);
         $order = UserOrderDto::fromRequest($request);
 
-        $users = $this->userService->getAllUsers($filter, $order);
+        $users = $this->userService->findAll($filter, $order);
         $filePath = $this->excelService->exportUsers($users);
         $fileName = basename($filePath);
 

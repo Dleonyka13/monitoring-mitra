@@ -61,16 +61,8 @@ trait PmlAllocationExportImportMethods
      */
     public function import(Request $request): JsonResponse
     {
-        // Access control
-        if (!$request->user()->hasRole('admin')) {
-            return ResponseHelper::forbidden(
-                'You do not have permission to import PML allocations'
-            );
-        }
-
-        // Validate file
         $validator = Validator::make($request->all(), [
-            'file' => 'required|file|mimes:xlsx,xls|max:5120', // Max 5MB
+            'file' => 'required|file|mimes:xlsx,xls|max:5120',
         ]);
 
         if ($validator->fails()) {
@@ -82,86 +74,20 @@ trait PmlAllocationExportImportMethods
         }
 
         try {
-            /** @var PmlAllocationExcelService $excelService */
             $excelService = app(PmlAllocationExcelService::class);
-
-            /** @var PmlAllocationService $service */
             $service = app(PmlAllocationService::class);
 
-            $file = $request->file('file');
-            $rows = $excelService->readExcelFile($file->getRealPath());
+            $rows = $excelService->readExcelFile(
+                $request->file('file')->getRealPath()
+            );
 
-            $successCount = 0;
-            $failedCount = 0;
-            $errors = [];
+            // 🔥 PENTING: PAKAI SERVICE
+            $result = $service->processImport($rows);
 
-            foreach ($rows as $index => $row) {
-                $rowNumber = $index + 2;
-
-                // Skip empty rows
-                if (empty(array_filter($row))) {
-                    continue;
-                }
-
-                // Prepare data
-                $data = [
-                    'user_id' => $row[0] ?? null,
-                    'statistical_activity_id' => $row[1] ?? null,
-                ];
-
-                // Validate row data
-                $rowValidator = Validator::make($data, [
-                    'user_id' => 'required|uuid|exists:users,id',
-                    'statistical_activity_id' => 'required|uuid|exists:statistical_activities,id',
-                ]);
-
-                if ($rowValidator->fails()) {
-                    $failedCount++;
-                    $errors[] = [
-                        'row' => $rowNumber,
-                        'user_id' => $data['user_id'] ?? 'N/A',
-                        'errors' => $rowValidator->errors()->all(),
-                    ];
-                    continue;
-                }
-
-                try {
-                    // Check if allocation already exists
-                    if ($service->isUserAllocated($data['user_id'], $data['statistical_activity_id'])) {
-                        $failedCount++;
-                        $errors[] = [
-                            'row' => $rowNumber,
-                            'user_id' => $data['user_id'],
-                            'errors' => ['Allocation already exists'],
-                        ];
-                        continue;
-                    }
-
-                    // Create allocation
-                    $service->create(new \App\DTOs\PmlAllocation\CreatePmlAllocationDto(
-                        user_id: $data['user_id'],
-                        statistical_activity_id: $data['statistical_activity_id']
-                    ));
-
-                    $successCount++;
-                } catch (\Exception $e) {
-                    $failedCount++;
-                    $errors[] = [
-                        'row' => $rowNumber,
-                        'user_id' => $data['user_id'] ?? 'N/A',
-                        'errors' => [$e->getMessage()],
-                    ];
-                }
-            }
-
-            $message = "Import completed. Success: {$successCount}, Failed: {$failedCount}";
-
-            return ResponseHelper::success([
-                'success_count' => $successCount,
-                'failed_count' => $failedCount,
-                'errors' => $errors,
-            ], $message);
-
+            return ResponseHelper::success(
+                $result,
+                "Import completed. Success: {$result['success_count']}, Failed: {$result['failed_count']}"
+            );
         } catch (\Exception $e) {
             return ResponseHelper::error(
                 'Failed to import PML allocations',
@@ -170,4 +96,5 @@ trait PmlAllocationExportImportMethods
             );
         }
     }
+
 }

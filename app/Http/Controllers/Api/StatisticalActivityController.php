@@ -2,18 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Common\StatisticalActivity\StatisticalActivityFilterDto;
-use App\Common\StatisticalActivity\StatisticalActivityOrderDto;
-use App\DTOs\StatisticalActivity\CreateStatisticalActivityDto;
-use App\DTOs\StatisticalActivity\UpdateStatisticalActivityDto;
-use App\Helpers\PaginationHelper;
-use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\StatisticalActivityResource;
+use App\Helpers\ResponseHelper;
 use App\Services\StatisticalActivityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class StatisticalActivityController extends Controller
 {
@@ -27,40 +21,22 @@ class StatisticalActivityController extends Controller
      */
     public function create(Request $request): JsonResponse
     {
-        // Access control
-        if (!$request->user()->hasRole('admin')) {
-            return ResponseHelper::forbidden(
-                'You do not have permission to create statistical activities'
-            );
-        }
-
-        // Validation
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'total_target' => 'required|integer|min:1',
-            'is_done' => 'sometimes|boolean',
-        ]);
-
-        if ($validator->fails()) {
+        $result = $this->statisticalActivityService->createFromRequest($request);
+        
+        if (!$result['success']) {
             return ResponseHelper::error(
-                'Validation failed',
-                $validator->errors(),
-                422
+                $result['message'],
+                $result['errors'] ?? null,
+                $result['status_code']
             );
         }
-
-        $dto = CreateStatisticalActivityDto::fromRequest($request);
-        $activity = $this->statisticalActivityService->create($dto);
-
+        
         return ResponseHelper::success(
-            new StatisticalActivityResource($activity),
-            'Statistical activity created successfully',
-            201
+            $result['data'],
+            $result['message'],
+            $result['status_code']
         );
     }
-
 
     /**
      * Get all statistical activities with filters and sorting
@@ -68,26 +44,11 @@ class StatisticalActivityController extends Controller
      */
     public function findAll(Request $request): JsonResponse
     {
-        $user = $request->user();
-        $params = PaginationHelper::getParams($request);
-        $filter = StatisticalActivityFilterDto::fromRequest($request);
-        $order = StatisticalActivityOrderDto::fromRequest($request);
-
-        $activities = $this->statisticalActivityService->pagination(
-            $params['per_page'],
-            $filter,
-            $order,
-            $user
-        );
-
-        $transformedData = PaginationHelper::transform($activities);
-        $transformedData['data'] = StatisticalActivityResource::collection(
-            collect($transformedData['data'])
-        );
-
+        $result = $this->statisticalActivityService->findAllFromRequest($request);
+        
         return ResponseHelper::success(
-            $transformedData,
-            'Statistical activities retrieved successfully'
+            $result['data'],
+            $result['message']
         );
     }
 
@@ -97,26 +58,19 @@ class StatisticalActivityController extends Controller
      */
     public function findById(Request $request, string $id): JsonResponse
     {
-        $user = $request->user();
-
-        // Access control check
-        if (!in_array($user->role, ['admin', 'mitra', 'pegawai', 'kepala'])) {
-            return ResponseHelper::forbidden(
-                'You do not have permission to view statistical activities'
+        $result = $this->statisticalActivityService->findByIdFromRequest($request, $id);
+        
+        if (!$result['success']) {
+            return ResponseHelper::error(
+                $result['message'],
+                null,
+                $result['status_code']
             );
         }
-
-        $activity = $this->statisticalActivityService->findById($id, $user);
-
-        if (!$activity) {
-            return ResponseHelper::notFound(
-                'Statistical activity not found or you do not have access'
-            );
-        }
-
+        
         return ResponseHelper::success(
-            new StatisticalActivityResource($activity),
-            'Statistical activity retrieved successfully'
+            $result['data'],
+            $result['message']
         );
     }
 
@@ -126,51 +80,19 @@ class StatisticalActivityController extends Controller
      */
     public function update(Request $request, string $id): JsonResponse
     {
-        // Access control
-        if (!$request->user()->hasRole('admin')) {
-            return ResponseHelper::forbidden(
-                'You do not have permission to update statistical activities'
-            );
-        }
-
-        $activity = $this->statisticalActivityService->findByIdForAdmin($id);
-
-        if (!$activity) {
-            return ResponseHelper::notFound('Statistical activity not found');
-        }
-
-        // Validation
-        $validator = Validator::make($request->all(), [
-            'name' => 'sometimes|required|string|max:255',
-            'start_date' => 'sometimes|required|date',
-            'end_date' => 'sometimes|required|date|after_or_equal:start_date',
-            'total_target' => 'sometimes|required|integer|min:1',
-            'is_done' => 'sometimes|boolean',
-        ]);
-
-        if ($validator->fails()) {
-            return ResponseHelper::error(
-                'Validation failed',
-                $validator->errors(),
-                422
-            );
-        }
-
-        $dto = UpdateStatisticalActivityDto::fromRequest($request);
+        $result = $this->statisticalActivityService->updateFromRequest($request, $id);
         
-        if (!$dto->hasUpdates()) {
+        if (!$result['success']) {
             return ResponseHelper::error(
-                'No fields to update',
-                null,
-                400
+                $result['message'],
+                $result['errors'] ?? null,
+                $result['status_code']
             );
         }
-
-        $activity = $this->statisticalActivityService->update($activity, $dto);
-
+        
         return ResponseHelper::success(
-            new StatisticalActivityResource($activity),
-            'Statistical activity updated successfully'
+            $result['data'],
+            $result['message']
         );
     }
 
@@ -180,24 +102,19 @@ class StatisticalActivityController extends Controller
      */
     public function delete(Request $request, string $id): JsonResponse
     {
-        // Access control
-        if (!$request->user()->hasRole('admin')) {
-            return ResponseHelper::forbidden(
-                'You do not have permission to delete statistical activities'
+        $result = $this->statisticalActivityService->deleteFromRequest($request, $id);
+        
+        if (!$result['success']) {
+            return ResponseHelper::error(
+                $result['message'],
+                null,
+                $result['status_code']
             );
         }
-
-        $activity = $this->statisticalActivityService->findByIdForAdmin($id);
-
-        if (!$activity) {
-            return ResponseHelper::notFound('Statistical activity not found');
-        }
-
-        $this->statisticalActivityService->delete($activity);
-
+        
         return ResponseHelper::success(
             null,
-            'Statistical activity deleted successfully'
+            $result['message']
         );
     }
 
@@ -207,12 +124,59 @@ class StatisticalActivityController extends Controller
      */
     public function summary(Request $request): JsonResponse
     {
-        $user = $request->user();
-        $summary = $this->statisticalActivityService->getStatisticsSummary($user);
-
+        $result = $this->statisticalActivityService->getSummaryFromRequest($request);
+        
         return ResponseHelper::success(
-            $summary,
-            'Statistics summary retrieved successfully'
+            $result['data'],
+            $result['message']
+        );
+    }
+
+    /**
+     * Download statistical activity import template
+     * GET /api/monitoring-mitra/v1/kegiatan-statistik/template/download
+     */
+    public function downloadTemplate(): BinaryFileResponse
+    {
+        $result = $this->statisticalActivityService->generateTemplate();
+        
+        return response()
+            ->download($result['file_path'], $result['file_name'])
+            ->deleteFileAfterSend(true);
+    }
+
+    /**
+     * Export statistical activities to Excel
+     * GET /api/monitoring-mitra/v1/kegiatan-statistik/export/excel
+     */
+    public function export(Request $request): BinaryFileResponse
+    {
+        $result = $this->statisticalActivityService->exportFromRequest($request);
+        
+        return response()
+            ->download($result['file_path'], $result['file_name'])
+            ->deleteFileAfterSend(true);
+    }
+
+    /**
+     * Import statistical activities from Excel
+     * POST /api/monitoring-mitra/v1/kegiatan-statistik/import/excel
+     */
+    public function import(Request $request): JsonResponse
+    {
+        $result = $this->statisticalActivityService->importFromRequest($request);
+        
+        if (!$result['success']) {
+            return ResponseHelper::error(
+                $result['message'],
+                $result['errors'] ?? null,
+                $result['status_code']
+            );
+        }
+        
+        return ResponseHelper::success(
+            $result['data'],
+            $result['message']
         );
     }
 }
