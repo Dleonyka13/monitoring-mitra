@@ -45,5 +45,27 @@ Route::prefix("{$apiName}/{$apiVersion}")->group(function () {
             Route::patch('/kegiatan-statistik/{id}', [StatisticalActivityController::class, 'update']);
             Route::delete('/kegiatan-statistik/{id}', [StatisticalActivityController::class, 'delete']);
         });
+
+        # Pml Allocations Management
+        Route::get('/pml-allocations', [PmlAllocationController::class, 'index']);
+        Route::get('/pml-allocations/statistics/summary', [PmlAllocationController::class, 'summary']);
+        Route::get('/pml-allocations/check', [PmlAllocationController::class, 'checkAllocation']);
+        Route::get('/pml-allocations/user/{userId}', [PmlAllocationController::class, 'getByUser']);
+        Route::get('/pml-allocations/activity/{activityId}', [PmlAllocationController::class, 'getByActivity']);
+        Route::get('/pml-allocations/{id}', [PmlAllocationController::class, 'show']);
+        // Admin only routes
+        Route::middleware('role:admin')->group(function () {
+            Route::post('/pml-allocations', [PmlAllocationController::class, 'store']);
+            Route::post('/pml-allocations/bulk', [PmlAllocationController::class, 'bulkStore']);
+            Route::patch('/pml-allocations/{id}', [PmlAllocationController::class, 'update']);
+            Route::delete('/pml-allocations/{id}', [PmlAllocationController::class, 'destroy']);
+            Route::delete('/pml-allocations/activity/{activityId}', [PmlAllocationController::class, 'bulkDeleteByActivity']);
+            Route::delete('/pml-allocations/user/{userId}', [PmlAllocationController::class, 'bulkDeleteByUser']);
+            
+            // PML Export & Import
+            Route::get('/pml-allocations/export/excel', [PmlAllocationController::class, 'export']);
+            Route::get('/pml-allocations/template/download', [PmlAllocationController::class, 'downloadTemplate']);
+            Route::post('/pml-allocations/import/excel', [PmlAllocationController::class, 'import']);           
+        });
     });
 });

@@ -67,4 +67,30 @@ class StatisticalActivity extends Model
     {
         return $query->where('is_done', false);
     }
+
+    /**
+     * Scope untuk filter by user
+     */
+    public function scopeByUser($query, string $userId)
+    {
+        return $query->where('user_id', $userId);
+    }
+
+    /**
+     * Scope untuk filter by activity
+     */
+    public function scopeByActivity($query, string $activityId)
+    {
+        return $query->where('statistical_activity_id', $activityId);
+    }
+
+    /**
+     * Check if allocation already exists
+     */
+    public static function allocationExists(string $userId, string $activityId): bool
+    {
+        return self::where('user_id', $userId)
+            ->where('statistical_activity_id', $activityId)
+            ->exists();
+    }
 }

@@ -32,6 +32,14 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(StatisticalActivityExcelService::class, function ($app) {
             return new StatisticalActivityExcelService();
         });
+
+        $this->app->singleton(PmlAllocationService::class, function ($app) {
+            return new PmlAllocationService();
+        });
+
+        $this->app->singleton(PmlAllocationExcelService::class, function ($app) {
+            return new PmlAllocationExcelService();
+        });
     }
 
     /**

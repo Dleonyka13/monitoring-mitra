@@ -1,23 +1,19 @@
 <?php
 
-namespace App\Common\StatisticalActivity;
+namespace App\Common\PmlAllocation;
 
 use Illuminate\Http\Request;
+
 /**
- * DTO untuk Order/Sorting Statistical Activity
+ * DTO untuk Order/Sorting PML Allocation
  */
-class StatisticalActivityOrderDto
+class PmlAllocationOrderDto
 {
     public const ALLOWED_FIELDS = [
-        'name', 
-        'start_date', 
-        'end_date', 
-        'total_target', 
-        'is_done',
-        'created_at', 
-        'updated_at'
+        'created_at',
+        'updated_at',
     ];
-    
+
     public const ALLOWED_DIRECTIONS = ['asc', 'desc'];
 
     public function __construct(
